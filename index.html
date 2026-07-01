@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>カタン シミュレーター</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="board-area">
+    <canvas id="board" width="820" height="780"></canvas>
+    <div id="overlay-msg"></div>
+    <button id="btn-help" title="ヘルプ (?)">?</button>
+    <div id="turn-banner"></div>
+  </div>
+  <div id="sidebar">
+    <div id="players-panel"></div>
+
+    <div id="status-panel">
+      <div id="phase-display"></div>
+
+      <div id="dice-display">
+        <div id="die1" class="die">-</div>
+        <div id="die2" class="die">-</div>
+        <div id="dice-sum">合計 -</div>
+      </div>
+
+      <div class="section-label">あなたの資源</div>
+      <div id="resources-panel"></div>
+
+      <div class="section-label">発展カード <span class="muted" id="devcards-hint">(クリックで使用)</span></div>
+      <div id="devcards-panel"></div>
+
+      <div class="section-label">アクション</div>
+      <div id="action-buttons">
+        <button id="btn-roll" class="action-btn primary" data-key="R">
+          <span class="icon">🎲</span>
+          <span class="label">サイコロ</span>
+          <span class="cost">[R]</span>
+        </button>
+        <button id="btn-end-turn" class="action-btn warn" data-key="E">
+          <span class="icon">✓</span>
+          <span class="label">ターン終了</span>
+          <span class="cost">[E]</span>
+        </button>
+        <button id="btn-build-road" class="action-btn" data-key="O" title="木1 + 土1">
+          <span class="icon">🛣️</span>
+          <span class="label">道</span>
+          <span class="cost">木+土</span>
+        </button>
+        <button id="btn-build-settlement" class="action-btn" data-key="S" title="木1 + 土1 + 麦1 + 羊1">
+          <span class="icon">🏠</span>
+          <span class="label">開拓地</span>
+          <span class="cost">木+土+麦+羊</span>
+        </button>
+        <button id="btn-build-city" class="action-btn" data-key="C" title="麦2 + 鉱石3">
+          <span class="icon">🏰</span>
+          <span class="label">都市</span>
+          <span class="cost">麦×2+鉄×3</span>
+        </button>
+        <button id="btn-buy-dev" class="action-btn" data-key="D" title="麦1 + 羊1 + 鉱石1">
+          <span class="icon">📜</span>
+          <span class="label">発展カード</span>
+          <span class="cost">麦+羊+鉄</span>
+        </button>
+        <button id="btn-trade" class="action-btn" data-key="T">
+          <span class="icon">🔄</span>
+          <span class="label">取引</span>
+          <span class="cost">[T]</span>
+        </button>
+        <button id="btn-play-dev" class="action-btn">
+          <span class="icon">⚔️</span>
+          <span class="label">カード使用</span>
+          <span class="cost"></span>
+        </button>
+        <button id="btn-cancel" class="action-btn cancel" data-key="Esc">
+          <span class="icon">✕</span>
+          <span class="label">キャンセル</span>
+          <span class="cost">[Esc]</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="train-banner" class="hidden">
+      <div class="train-banner-title">
+        <span id="train-banner-icon">⚙️</span>
+        <span id="train-banner-label">学習中...</span>
+        <span id="train-banner-eta"></span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="train-banner-bar" class="progress-bar-fill" style="width:0%"></div>
+      </div>
+      <div class="train-banner-sub">
+        <span id="train-banner-game"></span>
+        <span id="train-banner-loss"></span>
+      </div>
+      <div class="progress-bar-bg" style="margin-top:3px">
+        <div id="train-banner-turn-bar" class="progress-bar-fill turn-bar" style="width:0%"></div>
+      </div>
+      <div id="train-banner-detail"></div>
+    </div>
+
+    <details id="ai-panel-wrapper">
+      <summary>🤖 学習AI設定 (上級者向け)</summary>
+      <div id="ai-panel">
+        <div id="ai-status">読み込み中...</div>
+        <div class="ai-toggles">
+          <label><input type="checkbox" id="chk-use-nn"> NN使用 (対戦相手をNN化)</label>
+          <label class="strong-label"><input type="checkbox" id="chk-strong-mode" checked> 強力AI(P0)</label>
+          <label class="strong-label"><input type="checkbox" id="chk-mcts-cpu"> 🧠 最強CPU(MCTS, AI全員)</label>
+          <label>最強CPUの思考量:
+            <select id="sel-mcts-cpu-level">
+              <option value="10">速い (10)</option>
+              <option value="20" selected>標準 (20)</option>
+              <option value="40">強い (40)</option>
+              <option value="80">最強 (80・遅い)</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="chk-mixed-train" checked> 混在学習(NN×1+H×3)</label>
+          <label class="human-label"><input type="checkbox" id="chk-human-learn"> 自分のプレーを学習</label>
+        </div>
+        <div class="ai-buttons">
+          <button id="btn-train">学習</button>
+          <button id="btn-eval">評価</button>
+          <button id="btn-train-stop" disabled>停止</button>
+          <button id="btn-save-weights">保存</button>
+          <button id="btn-load-weights">読込</button>
+          <button id="btn-export-file">ファイル出力</button>
+          <button id="btn-import-file">ファイル入力</button>
+          <button id="btn-reset-weights">初期化</button>
+          <button id="btn-pretrain" class="purple">ヒューリスティック事前学習</button>
+          <button id="btn-pretrain-strong" class="purple">💪 強力AI蒸留事前学習</button>
+          <button id="btn-auto-train" class="green">自動学習(25%超まで)</button>
+          <button id="btn-auto-stop" disabled>自動停止</button>
+          <button id="btn-train-full" class="orange">🚀 最速50%達成</button>
+        </div>
+        <div class="section-label">MCTS強化学習 (AlphaZero style)</div>
+        <div class="ai-buttons">
+          <div class="mcts-config" style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <div>
+              <label>ゲーム数:</label>
+              <input type="number" id="mcts-games" min="1" max="100" value="5" style="width: 60px;">
+            </div>
+            <div>
+              <label>ロールアウト数:</label>
+              <input type="number" id="mcts-rollouts" min="1" max="20" value="3" style="width: 60px;">
+            </div>
+          </div>
+          <button id="btn-mcts-train" class="blue">MCTS学習を開始</button>
+          <div id="mcts-info" style="font-size: 12px; color: #aaa; margin-top: 4px;">推定時間: 計算中...</div>
+        </div>
+        <div id="mcts-progress-wrap" class="hidden">
+          <div class="progress-header">
+            <span id="mcts-progress-label">ゲーム 0/0</span>
+            <span id="mcts-progress-eta">--</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="mcts-progress-bar" class="progress-bar-fill" style="width:0%"></div>
+          </div>
+          <div class="progress-header" style="margin-top:4px">
+            <span id="mcts-turn-label">ターン進行中...</span>
+            <span id="mcts-eval-label">MCTS評価: 0回</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="mcts-turn-bar" class="progress-bar-fill turn-bar" style="width:0%"></div>
+          </div>
+          <div id="mcts-stats-line"></div>
+        </div>
+        <div id="train-progress"></div>
+        <div id="human-learn-status"></div>
+      </div>
+    </details>
+
+    <div id="log-panel"></div>
+  </div>
+</div>
+
+<div id="modal-bg" class="hidden">
+  <div id="modal">
+    <button id="modal-close-x" onclick="hideModal()" title="閉じる (Esc)">×</button>
+    <div id="modal-title"></div>
+    <div id="modal-content"></div>
+    <div id="modal-buttons"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="game.js"></script>
+<script src="strong_ai.js"></script>
+<script src="nn.js"></script>
+<script src="analysis.js"></script>
+<script src="mcts_cpu.js"></script>
+<script src="ui_enhance.js"></script>
+</body>
+</html>
