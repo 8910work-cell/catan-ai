@@ -1,5 +1,7 @@
 # Catan AI 🏝️🤖
 
+[![CI](https://github.com/8910work-cell/catan-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/8910work-cell/catan-ai/actions)
+
 A from-scratch **value-network + MCTS** agent for *Settlers of Catan*, trained
 via headless self-play. Browser-playable, research-informed, and benchmarked
 against heuristic baselines with real win-rate numbers.
@@ -86,6 +88,16 @@ python3 -m http.server 8000
 npm install
 node bench_mcts.js 100      # MCTS CPU vs heuristic AI, 100 games
 node auto_train.mjs         # drives the browser build to self-play and update weights
+```
+
+## Tests
+
+CI (`.github/workflows/ci.yml`) runs both of these on every push — network-free,
+no Playwright required:
+
+```bash
+node test_mcts.js   # regression suite: MCTS + strong-AI behavior (12 checks)
+node node_test.js   # 200-game self-play benchmark; fails CI if any game crashes
 ```
 
 ## Honesty notes

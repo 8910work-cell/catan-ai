@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run MCTS + strong-AI regression suite (headless, network-free)
+        run: node test_mcts.js
+
+      - name: Run self-play benchmark and check for engine crashes
+        run: |
+          node node_test.js | tee bench_output.txt
+          if grep -qE "crash:[1-9]" bench_output.txt; then
+            echo "::error::Game engine crashed during self-play benchmark"
+            exit 1
+          fi
