@@ -17,6 +17,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Validate Claude Code skills (.claude/skills)
+        run: node test_skills.mjs
+
       - name: Run MCTS + strong-AI regression suite (headless, network-free)
         run: node test_mcts.js
 
